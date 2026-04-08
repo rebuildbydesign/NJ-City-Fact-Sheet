@@ -11,66 +11,6 @@ let FEMA = {};       // populated from CSV
 let CSV_DATA = {};   // raw CSV rows keyed by city
 let NONRENEWALS = {}; // populated from non-renewals CSV
 
-// ── CONGRESSIONAL REPS (from NJ_Congress.geojson) ─────────────────
-const CONGRESS = {
-  "01": { name: "Donald Norcross", party: "D", phone: "(202) 225-6501" },
-  "02": { name: "Jefferson Van Drew", party: "R", phone: "(202) 225-6572" },
-  "03": { name: "Herbert Conaway", party: "D", phone: "(202) 225-4765" },
-  "04": { name: "Christopher Smith", party: "R", phone: "(202) 225-3765" },
-  "05": { name: "Josh Gottheimer", party: "D", phone: "(202) 225-4465" },
-  "06": { name: "Frank Pallone", party: "D", phone: "(202) 225-4671" },
-  "07": { name: "Thomas Kean", party: "R", phone: "(202) 225-5361" },
-  "08": { name: "Robert Menendez", party: "D", phone: "(202) 225-7919" },
-  "09": { name: "Nellie Pou", party: "D", phone: "(202) 225-5751" },
-  "10": { name: "LaMonica McIver", party: "D", phone: "(202) 225-3436" },
-  "11": { name: "Mikie Sherrill", party: "D", phone: "(202) 225-5034" },
-  "12": { name: "Bonnie Watson Coleman", party: "D", phone: "(202) 225-5801" }
-};
-
-// ── STATE LEGISLATURE (from NJ_Senate.geojson + NJ_House.geojson) ─
-const LEGISLATURE = {
-  "1": { senator: "Michael L. Testa, Jr.", sparty: "R", a1: "Antwan L. McClellan", a1p: "R", a2: "Erik K. Simonsen", a2p: "R" },
-  "2": { senator: "Vincent J. Polistina", sparty: "R", a1: "Donald A. Guardian", a1p: "R", a2: "Claire S. Swift", a2p: "R" },
-  "3": { senator: "John J. Burzichelli", sparty: "D", a1: "David Bailey, Jr.", a1p: "D", a2: "Heather Simmons", a2p: "D" },
-  "4": { senator: "Paul D. Moriarty", sparty: "D", a1: "Dan Hutchison", a1p: "D", a2: "Cody D. Miller", a2p: "D" },
-  "5": { senator: "Nilsa I. Cruz-Perez", sparty: "D", a1: "William F. Moen, Jr.", a1p: "D", a2: "William W. Spearman", a2p: "D" },
-  "6": { senator: "James Beach", sparty: "D", a1: "Louis D. Greenwald", a1p: "D", a2: "Melinda Kane", a2p: "D" },
-  "7": { senator: "Troy Singleton", sparty: "D", a1: "Balvir Singh", a1p: "D", a2: "Carol A. Murphy", a2p: "D" },
-  "8": { senator: "Latham Tiver", sparty: "R", a1: "Andrea Katz", a1p: "D", a2: "Michael Torrissi, Jr.", a2p: "R" },
-  "9": { senator: "Carmen F. Amato, Jr.", sparty: "R", a1: "Gregory E. Myhre", a1p: "R", a2: "Brian E. Rumpf", a2p: "R" },
-  "10": { senator: "James W. Holzapfel", sparty: "R", a1: "Paul Kanitra", a1p: "R", a2: "Gregory P. McGuckin", a2p: "R" },
-  "11": { senator: "Vin Gopal", sparty: "D", a1: "Margie Donlon, M.D.", a1p: "D", a2: "Luanne M. Peterpaul, Esq.", a2p: "D" },
-  "12": { senator: "Owen Henry", sparty: "R", a1: "Robert D. Clifton", a1p: "R", a2: "Alex Sauickie", a2p: "R" },
-  "13": { senator: "Declan J. O'Scanlon, Jr.", sparty: "R", a1: "Victoria A. Flynn", a1p: "R", a2: "Gerry Scharfenberger", a2p: "R" },
-  "14": { senator: "Linda R. Greenstein", sparty: "D", a1: "Wayne P. DeAngelo", a1p: "D", a2: "Tennille R. McCoy", a2p: "D" },
-  "15": { senator: "Shirley K. Turner", sparty: "D", a1: "Verlina Reynolds-Jackson", a1p: "D", a2: "Anthony S. Verrelli", a2p: "D" },
-  "16": { senator: "Andrew Zwicker", sparty: "D", a1: "Mitchelle Drulis", a1p: "D", a2: "Roy Freiman", a2p: "D" },
-  "17": { senator: "Bob Smith", sparty: "D", a1: "Joe Danielsen", a1p: "D", a2: "Kevin P. Egan", a2p: "D" },
-  "18": { senator: "Patrick J. Diegnan, Jr.", sparty: "D", a1: "Robert J. Karabinchak", a1p: "D", a2: "Sterley S. Stanley", a2p: "D" },
-  "19": { senator: "Joseph F. Vitale", sparty: "D", a1: "Craig J. Coughlin", a1p: "D", a2: "Yvonne Lopez", a2p: "D" },
-  "20": { senator: "Joseph P. Cryan", sparty: "D", a1: "Reginald W. Atkins", a1p: "D", a2: "Annette Quijano", a2p: "D" },
-  "21": { senator: "Jon M. Bramnick", sparty: "R", a1: "Michele Matsikoudis", a1p: "R", a2: "Nancy F. Munoz", a2p: "R" },
-  "22": { senator: "Nicholas P. Scutari", sparty: "D", a1: "Linda S. Carter", a1p: "D", a2: "James J. Kennedy", a2p: "D" },
-  "23": { senator: "Douglas J. Steinhardt", sparty: "R", a1: "John DiMaio", a1p: "R", a2: "Erik Peterson", a2p: "R" },
-  "24": { senator: "Parker Space", sparty: "R", a1: "Dawn Fantasia", a1p: "R", a2: "Michael Inganamort", a2p: "R" },
-  "25": { senator: "Anthony M. Bucco", sparty: "R", a1: "Christian E. Barranco", a1p: "R", a2: "Aura K. Dunn", a2p: "R" },
-  "26": { senator: "Joseph Pennacchio", sparty: "R", a1: "Brian Bergen", a1p: "R", a2: "Jay Webber", a2p: "R" },
-  "27": { senator: "John F. McKeon", sparty: "D", a1: "Rosy Bagolie", a1p: "D", a2: "Alixon Collazos-Gill", a2p: "D" },
-  "28": { senator: "Renee C. Burgess", sparty: "D", a1: "Garnet R. Hall", a1p: "D", a2: "Cleopatra G. Tucker", a2p: "D" },
-  "29": { senator: "Teresa Ruiz", sparty: "D", a1: "Eliana Pintor Marin", a1p: "D", a2: "Shanique Speight", a2p: "D" },
-  "30": { senator: "Robert W. Singer", sparty: "R", a1: "Sean T. Kean", a1p: "R", a2: 'Alexander "Avi" Schnall', a2p: "D" },
-  "31": { senator: "Angela V. McKnight", sparty: "D", a1: "Barbara McCann Stamato", a1p: "D", a2: "William B. Sampson IV", a2p: "D" },
-  "32": { senator: "Raj Mukherji", sparty: "D", a1: "John Allen", a1p: "D", a2: "Jessica Ramirez", a2p: "D" },
-  "33": { senator: "Brian P. Stack", sparty: "D", a1: "Julio Marenco", a1p: "D", a2: "Gabriel Rodriguez", a2p: "D" },
-  "34": { senator: "Britnee D. Timberlake", sparty: "D", a1: "Carmen Theresa Morales", a1p: "D", a2: "Michael Venezia", a2p: "D" },
-  "35": { senator: "Benjie E. Wimberly", sparty: "D", a1: "Shavonda E. Sumter", a1p: "D", a2: "Al Abdelaziz", a2p: "D" },
-  "36": { senator: "Paul A. Sarlo", sparty: "D", a1: "Clinton Calabrese", a1p: "D", a2: "Gary S. Schaer", a2p: "D" },
-  "37": { senator: "Gordon M. Johnson", sparty: "D", a1: "Shama A. Haider", a1p: "D", a2: "Ellen J. Park", a2p: "D" },
-  "38": { senator: "Joseph A. Lagana", sparty: "D", a1: "Lisa Swain", a1p: "D", a2: "Chris Tully", a2p: "D" },
-  "39": { senator: "Holly T. Schepisi", sparty: "R", a1: "Robert Auth", a1p: "R", a2: "John V. Azzariti, Jr. M.D.", a2p: "R" },
-  "40": { senator: "Kristin M. Corrado", sparty: "R", a1: "Al Barlas", a1p: "R", a2: "Christopher P. DePhillips", a2p: "R" }
-};
-
 
 // ── ASSET LABELS ────────────────────────────────────────────────
 const ASSET_META = {
@@ -498,7 +438,7 @@ function renderCity(name) {
           </ul>
         </div>
       </div>
-    </div>
+
 
 <!-- KEY METRICS -->
 <div class="section-title">City Overview</div>
@@ -598,76 +538,46 @@ async function exportPDF() {
   const el = document.getElementById('fact-sheet');
   if (!el) return;
 
-  const cityName = document.getElementById('city-select').value;
   const btn = document.getElementById('btn-export');
-
   btn.disabled = true;
   btn.textContent = 'Generating…';
 
-  window.scrollTo(0, 0);
-
-  let canvases = [];
-  let imgOriginals = [];
-
-  // Save original styles
-  const originalHeight = el.style.height;
-  const originalMaxHeight = el.style.maxHeight;
-
   try {
-    await waitForNextFrame();
-    await waitForNextFrame();
+    const pdfWidthInches = 8.5; // Letter
+    const pdfHeightInches = 11;
+    const marginInches = 0.3;
+    const pxPerInch = 300; // Render at high DPI (300px per inch)
 
-    // OPTIONAL: comment this out if issues persist
-    canvases = await rasterizeSVGs(el);
+    // Calculate canvas scale to render at high resolution
+    const scale = pxPerInch / 96; // 96 is browser CSS px per inch
 
-    imgOriginals = fixObjectFitImages(el);
-
-    await waitForNextFrame();
-
-    // 🔥 CRITICAL FIX: allow full expansion (prevents clipping)
-    el.style.height = 'auto';
-    el.style.maxHeight = 'none';
-
-    const canvas = await html2canvas(el, {
-      scale: 1.5,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      width: el.scrollWidth,
-      height: el.scrollHeight,
-      windowWidth: document.documentElement.scrollWidth,
-      windowHeight: document.documentElement.scrollHeight
-    });
-
-    const margin = 0.25;
-
-    await html2pdf().set({
-      margin: [margin, margin, margin, margin],
-      filename: `NJUnderwater_${cityName}.pdf`,
-      image: { type: 'jpeg', quality: 0.95 },
-      jsPDF: { unit: 'in', format: 'legal', orientation: 'portrait' },
-      pagebreak: { mode: [] }
-    }).from(canvas).save();
+    await html2pdf()
+      .set({
+        margin: marginInches,
+        filename: 'fact-sheet.pdf',
+        image: { type: 'jpeg', quality: 1.0 },
+        html2canvas: {
+          scale: scale,
+          useCORS: true,
+          allowTaint: true,
+        },
+        jsPDF: {
+          unit: 'in',
+          format: 'letter',
+          orientation: 'portrait',
+        },
+        pagebreak: { mode: ['css', 'legacy'] }
+      })
+      .from(el)
+      .save();
 
   } catch (err) {
     console.error('PDF export failed', err);
-  } finally {
-    // Restore styles
-    el.style.height = originalHeight;
-    el.style.maxHeight = originalMaxHeight;
-
-    restoreObjectFitImages(imgOriginals);
-    restoreSVGs(el, canvases);
-
-    btn.disabled = false;
-    btn.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      Export PDF
-    `;
+    alert(err.message);
   }
+
+  btn.disabled = false;
+  btn.textContent = 'Export PDF';
 }
 // ── PNG EXPORT ──────────────────────────────────────────────────
 async function exportPNG() {
