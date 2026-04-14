@@ -395,6 +395,15 @@ body {
   margin-bottom: 6px;
 }
 
+.insight-kicker {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--flood-2050);
+  margin-bottom: 14px;
+}
+
 .displacement-note {
   font-size: 0.72rem;
   line-height: 1.45;
@@ -414,6 +423,22 @@ body {
 .displacement-callout strong {
   color: var(--crisis);
 }
+
+.infrastructure-callout {
+  margin-top: 4px;
+  margin-bottom: 14px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.infra-num {
+  font-weight: 800;
+}
+
+.infra-num.y2024 { color: var(--flood-2025); }
+.infra-num.y2050 { color: var(--flood-2050); }
 
 .displacement-bar {
   display: flex;
@@ -562,6 +587,20 @@ body {
 
 .blue-acres-note strong {
   color: #439287;
+}
+
+.blue-acres-detail {
+  margin-top: 12px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.risk-card-embedded {
+  margin-top: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 /* ── ASSET TABLE ────────────────────────────────────────────── */

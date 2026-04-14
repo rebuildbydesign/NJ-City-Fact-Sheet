@@ -383,12 +383,22 @@ function renderCity(name) {
   const f = FEMA[matchedName?.trim()];
   const row = CSV_DATA[matchedName?.trim()] || {};
   const countyName = String(row.COUNTY || '').trim();
+  const blueAcresParcels = num(row.blueacres);
   const countyIntro = countyName
     ? `is part of <strong>${countyName} County</strong> and has experienced`
     : 'has experienced';
   const placeTitle = countyName
     ? `${matchedName}, ${countyName} County, New Jersey`
     : `${matchedName}, New Jersey`;
+  const fundingPlaceName = /\bcity\b/i.test(matchedName)
+    ? matchedName
+    : `${matchedName} City`;
+  const blueAcresSummary = blueAcresParcels > 0
+    ? `Displacement is already underway. <strong>${matchedName}</strong> accounts for <strong>${fmt(blueAcresParcels)} Blue Acres buyout ${blueAcresParcels === 1 ? 'property' : 'properties'}</strong>, part of <strong>1,677 statewide buyouts since 1987</strong>.`
+    : `No Blue Acres buyouts are recorded for <strong>${matchedName}</strong> in this dataset, though displacement pressure is already visible in nearby communities across ${countyName ? `<strong>${countyName} County</strong>` : 'New Jersey'} and statewide.`;
+  const blueAcresDetail = blueAcresParcels > 0
+    ? `These flood-damaged properties were acquired through New Jersey's voluntary home buyout program, Blue Acres.`
+    : `The absence of recorded buyouts here does not mean the city is free from flood-related housing risk.`;
   if (!c || !f) {
   container.innerHTML = `<div class="empty-state">
     <p>No data available for ${matchedName}.</p>
@@ -433,7 +443,7 @@ function renderCity(name) {
     <!-- MAP + RESILIENT INFRASTRUCTURE -->
       <div class="bond-act-callout">
         <div class="bond-act-header">
-          <span class="bond-act-title">The Case for Dedicated Funding in ${matchedName} City</span>
+          <span class="bond-act-title">The Case for Dedicated Funding in ${fundingPlaceName}</span>
 
         </div>
         <div class="bond-message">
@@ -482,36 +492,52 @@ function renderCity(name) {
 <!-- ASSET TABLE HEADER -->
 <div class="section-title">Public Infrastructure In the Flood Zones</div>
 
-<!-- FLOOD RISK FULL WIDTH -->
-<div class="risk-grid risk-grid-full">
-  <div class="risk-card">
-    <div class="risk-card-title">Public Infrastructure at Risk</div>
-    
-    <div class="risk-row">
-      <span class="risk-year-label y2024">2025</span>
-      <div class="risk-bar-track">
-        <div class="risk-bar-fill y2024" style="width:${totalAssets ? risk2025 / totalAssets * 100 : 0}%"></div>
-      </div>
-      <span class="risk-value y2024">
-        ${fmt(risk2025)} 
-        <span style="font-size:0.72rem;font-weight:400">
-          (${fmtPctValue(totalAssets ? risk2025 / totalAssets * 100 : 0)})
+<div class="insights-split">
+  <div class="displacement-panel">
+    <div class="insight-kicker">Public Infrastructure at Risk</div>
+    <div class="infrastructure-callout">Today, <strong class="infra-num y2024">${fmt(risk2025)}</strong> public infrastructure assets are already in flood zones, rising to <strong class="infra-num y2050">${fmt(risk2050)}</strong> by 2050.</div>
+    <div class="risk-card risk-card-embedded">
+      <div class="risk-row">
+        <span class="risk-year-label y2024">2025</span>
+        <div class="risk-bar-track">
+          <div class="risk-bar-fill y2024" style="width:${totalAssets ? risk2025 / totalAssets * 100 : 0}%"></div>
+        </div>
+        <span class="risk-value y2024">
+          ${fmt(risk2025)} 
+          <span style="font-size:0.72rem;font-weight:400">
+            (${fmtPctValue(totalAssets ? risk2025 / totalAssets * 100 : 0)})
+          </span>
         </span>
-      </span>
-    </div>
+      </div>
 
-    <div class="risk-row">
-      <span class="risk-year-label y2050">2050</span>
-      <div class="risk-bar-track">
-        <div class="risk-bar-fill y2050" style="width:${totalAssets ? risk2050 / totalAssets * 100 : 0}%"></div>
-      </div>
-      <span class="risk-value y2050">
-        ${fmt(risk2050)} 
-        <span style="font-size:0.72rem;font-weight:400">
-          (${fmtPctValue(totalAssets ? risk2050 / totalAssets * 100 : 0)})
+      <div class="risk-row">
+        <span class="risk-year-label y2050">2050</span>
+        <div class="risk-bar-track">
+          <div class="risk-bar-fill y2050" style="width:${totalAssets ? risk2050 / totalAssets * 100 : 0}%"></div>
+        </div>
+        <span class="risk-value y2050">
+          ${fmt(risk2050)} 
+          <span style="font-size:0.72rem;font-weight:400">
+            (${fmtPctValue(totalAssets ? risk2050 / totalAssets * 100 : 0)})
+          </span>
         </span>
-      </span>
+      </div>
     </div>
+  </div>
+  <div class="blue-acres-panel">
+    <div class="blue-acres-kicker">Displacement Findings</div>
+    <div class="blue-acres-stats">
+      <div class="blue-acres-stat">
+        <div class="blue-acres-value">${fmt(blueAcresParcels)}</div>
+        <div class="blue-acres-label">City Blue Acres Buyout Parcels</div>
+      </div>
+      <div class="blue-acres-stat">
+        <div class="blue-acres-value">1,677</div>
+        <div class="blue-acres-label">Statewide Buyouts Since 1987</div>
+      </div>
+    </div>
+    <div class="blue-acres-note">${blueAcresSummary}</div>
+    <div class="blue-acres-detail">${blueAcresDetail}</div>
   </div>
 </div>
 
@@ -543,7 +569,7 @@ function renderCity(name) {
 
 // ── PDF EXPORT ──────────────────────────────────────────────────
 const PDF_EXPORT = {
-  marginInches: 0.2,
+  marginInches: 0.3,
   widthInches: 8.5,
   heightInches: 11,
   pxPerInch: 96
