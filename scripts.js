@@ -14,8 +14,8 @@ let NONRENEWALS = {}; // populated from non-renewals CSV
 
 // ── ASSET LABELS ────────────────────────────────────────────────
 const ASSET_META = {
-  airports: { label: "Airports", source: "USDOT" },
-  hospitals: { label: "Hospitals", source: "NJ Office of GIS" },
+  airports: { label: "Airport Facilities", source: "USDOT" },
+  hospitals: { label: "Hospital Facilities", source: "NJ Office of GIS" },
   contaminated: { label: "Contaminated Sites", source: "NJDEP" },
   libraries: { label: "Libraries", source: "NJDCA GIS" },
   parks: { label: "Parks", source: "Trust for Public Land" },
@@ -381,6 +381,14 @@ function renderCity(name) {
   btn.disabled = false;
   const c = CITIES[matchedName?.trim()];
   const f = FEMA[matchedName?.trim()];
+  const row = CSV_DATA[matchedName?.trim()] || {};
+  const countyName = String(row.COUNTY || '').trim();
+  const countyIntro = countyName
+    ? `is part of <strong>${countyName} County</strong> and has experienced`
+    : 'has experienced';
+  const placeTitle = countyName
+    ? `${matchedName}, ${countyName} County, New Jersey`
+    : `${matchedName}, New Jersey`;
   if (!c || !f) {
   container.innerHTML = `<div class="empty-state">
     <p>No data available for ${matchedName}.</p>
@@ -418,7 +426,7 @@ function renderCity(name) {
         <img class="fs-logo" src="RBD-logo.png" alt="Rebuild by Design">
         <img class="fs-header-banner" src="nj-banner.png" alt="New Jersey Cannot Afford to Wait">
       </div>
-      <div class="fs-county-name">${matchedName}, New Jersey</div>
+      <div class="fs-county-name">${placeTitle}</div>
       <div class="fs-subtitle">Flood Risk to People, Local Infrastructure, and the Economy</div>
     </div>
 
@@ -430,7 +438,8 @@ function renderCity(name) {
         </div>
         <div class="bond-message">
           <ul class="bond-message-list">
-            <li><strong>${matchedName} </strong> has experienced <strong>${f.disasters} federal disaster declarations</strong> since 2011. Across the state, 93% of NJ voters want investments to reduce weather damage and <strong>77%</strong> are worried about extreme weather across party lines <a class="citation-link" href="https://www.fdu.edu/news/fdu-poll-finds-3-in-4-nj-voters-worried-about-damage-from-extreme-weather/" target="_blank" rel="noopener noreferrer">(Fairleigh Dickinson University, 2024)</a>.</li>
+            <li><strong>${matchedName}</strong> ${countyIntro} <strong>${f.disasters} federal disaster declarations</strong> since 2011.</li>
+            <li>Across the state, 93% of NJ voters want investments to reduce weather damage and <strong>77%</strong> are worried about extreme weather across party lines <a class="citation-link" href="https://www.fdu.edu/news/fdu-poll-finds-3-in-4-nj-voters-worried-about-damage-from-extreme-weather/" target="_blank" rel="noopener noreferrer">(Fairleigh Dickinson University, 2024)</a>.</li>
             ${c.facts && c.facts.length 
             ? c.facts.map(f => `<li>${f}</li>`).join('')
             : '<li style="color:red;">NO FACTS FOUND</li>'}
@@ -516,12 +525,11 @@ function renderCity(name) {
       <div>
         <div class="fs-footer-title">Methodology &amp; Notes</div>
         <ul class="fs-footer-list">
-          <li>This fact sheet draws from three Rebuild by Design research products: the <strong>Atlas of Disaster</strong> (city-level disaster declarations and federal spending, 2011–2024), <strong>NJ Flood Risk = Financial Risk</strong> (parcel-level displacement and financial analysis of all 3.4 million NJ properties), and <strong>NJ Underwater: Public Infrastructure at Risk</strong> (exposure analysis of 18,959 public assets under 2025 and 2050 flood conditions).</li>
+          <li>This fact sheet draws from three Rebuild by Design research products: the <strong>Atlas of Disaster</strong> (county-level disaster declarations and FEMA obligations, 2011–2024), <strong>NJ Flood Risk = Financial Risk</strong> (parcel-level displacement and financial analysis of all 3.4 million NJ properties), and <strong>NJ Underwater: Public Infrastructure at Risk</strong> (exposure analysis of 18,959 public assets under 2025 and 2050 flood conditions).</li>
 <li><strong>Data Sources:</strong> CDC/ATSDR 2022, EPA, FEMA, NJ Office of GIS, NJDEP, Rutgers University, Senate Budget Office, Trust for Public Land, US EIA, USDOT.</li>
         </ul>
       </div>
       <div>
-        <img class="fs-footer-logo" src="RBD-logo.png" alt="Rebuild by Design">
         <ul class="fs-footer-list">
           <li>Visit <a href="https://rebuildbydesign.org/new-jersey" target="_blank">rebuildbydesign.org/new-jersey</a> for reports, tools, and upcoming events.</li>
           <li>For more information, contact <a href="mailto:info@rebuildbydesign.org">info@rebuildbydesign.org</a></li>
@@ -534,50 +542,205 @@ function renderCity(name) {
 }
 
 // ── PDF EXPORT ──────────────────────────────────────────────────
+const PDF_EXPORT = {
+  marginInches: 0.2,
+  widthInches: 8.5,
+  heightInches: 11,
+  pxPerInch: 96
+};
+
+function preparePDFExport(container) {
+  document.body.classList.add('exporting-pdf');
+
+  return () => {
+    document.body.classList.remove('exporting-pdf');
+  };
+}
+
+function rasterizeSVGs(container) {
+  const svgs = container.querySelectorAll('.county-map-wrap svg, .city-map-wrap svg');
+  const promises = [];
+  svgs.forEach(svg => {
+    const origSVGMarkup = svg.outerHTML;
+    const paths = svg.querySelectorAll('path');
+    paths.forEach(path => {
+      const computed = window.getComputedStyle(path);
+      path.setAttribute(
+        'style',
+        `fill:${computed.fill};stroke:${computed.stroke};stroke-width:${computed.strokeWidth};opacity:${computed.opacity}`
+      );
+    });
+
+    const wrap = svg.closest('.county-map-wrap, .city-map-wrap');
+    if (!wrap) {
+      paths.forEach(path => path.removeAttribute('style'));
+      return;
+    }
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+    const drawW = wrapRect.width;
+    const drawH = wrapRect.height;
+    const vb = svg.viewBox.baseVal;
+    const zoomX = drawW / svgRect.width;
+    const zoomY = drawH / svgRect.height;
+    const cropW = vb.width * zoomX;
+    const cropH = vb.height * zoomY;
+    const cropX = vb.x + (vb.width - cropW) / 2;
+    const cropY = vb.y + (vb.height - cropH) / 2;
+
+    const origViewBox = svg.getAttribute('viewBox');
+    svg.setAttribute('viewBox', `${cropX.toFixed(2)} ${cropY.toFixed(2)} ${cropW.toFixed(2)} ${cropH.toFixed(2)}`);
+    svg.setAttribute('width', drawW);
+    svg.setAttribute('height', drawH);
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+
+    svg.setAttribute('viewBox', origViewBox);
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    paths.forEach(path => path.removeAttribute('style'));
+
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    const p = new Promise((resolve) => {
+      img.onload = () => {
+        const scale = 3;
+        const canvas = document.createElement('canvas');
+        canvas.width = drawW * scale;
+        canvas.height = drawH * scale;
+        canvas.style.width = drawW + 'px';
+        canvas.style.height = drawH + 'px';
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+        ctx.drawImage(img, 0, 0, drawW, drawH);
+
+        URL.revokeObjectURL(url);
+        svg.parentNode.replaceChild(canvas, svg);
+        canvas._origSVG = origSVGMarkup;
+        resolve(canvas);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+    });
+    img.src = url;
+    promises.push(p);
+  });
+  return Promise.all(promises);
+}
+
+function restoreSVGs(container, canvases) {
+  canvases.forEach(canvas => {
+    if (canvas && canvas._origSVG && canvas.parentNode) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = canvas._origSVG;
+      const svg = tmp.firstElementChild;
+      canvas.parentNode.replaceChild(svg, canvas);
+    }
+  });
+}
+
+function waitForNextFrame() {
+  return new Promise(resolve => requestAnimationFrame(() => resolve()));
+}
+
+function fixObjectFitImages(container) {
+  const images = container.querySelectorAll('img[class*="banner"], .fs-header-banner');
+  const originals = [];
+  images.forEach(img => {
+    if (!img.complete || !img.naturalWidth) return;
+    const style = window.getComputedStyle(img);
+    const objFit = style.objectFit;
+    if (objFit === 'contain' || objFit === 'cover') {
+      const containerW = img.clientWidth;
+      const containerH = img.clientHeight;
+      const natW = img.naturalWidth;
+      const natH = img.naturalHeight;
+      const ratio = Math.min(containerW / natW, containerH / natH);
+      const drawW = natW * ratio;
+      const drawH = natH * ratio;
+
+      originals.push({
+        el: img,
+        width: img.style.width,
+        height: img.style.height,
+        maxWidth: img.style.maxWidth,
+        objectFit: img.style.objectFit
+      });
+
+      img.style.width = Math.round(drawW) + 'px';
+      img.style.height = Math.round(drawH) + 'px';
+      img.style.maxWidth = 'none';
+      img.style.objectFit = 'fill';
+    }
+  });
+  return originals;
+}
+
+function restoreObjectFitImages(originals) {
+  originals.forEach(o => {
+    o.el.style.width = o.width;
+    o.el.style.height = o.height;
+    o.el.style.maxWidth = o.maxWidth;
+    o.el.style.objectFit = o.objectFit;
+  });
+}
+
 async function exportPDF() {
   const el = document.getElementById('fact-sheet');
   if (!el) return;
 
+  const cityName = document.getElementById('city-select').value;
   const btn = document.getElementById('btn-export');
   btn.disabled = true;
   btn.textContent = 'Generating…';
 
+  window.scrollTo(0, 0);
+
+  let canvases = [];
+  let imgOriginals = [];
+  let cleanupExport = null;
+
   try {
-    const pdfWidthInches = 8.5; // Letter
-    const pdfHeightInches = 11;
-    const marginInches = 0.3;
-    const pxPerInch = 300; // Render at high DPI (300px per inch)
+    cleanupExport = preparePDFExport(el);
 
-    // Calculate canvas scale to render at high resolution
-    const scale = pxPerInch / 96; // 96 is browser CSS px per inch
+    await waitForNextFrame();
+    await waitForNextFrame();
 
-    await html2pdf()
-      .set({
-        margin: marginInches,
-        filename: 'fact-sheet.pdf',
-        image: { type: 'jpeg', quality: 1.0 },
-        html2canvas: {
-          scale: scale,
-          useCORS: true,
-          allowTaint: true,
-        },
-        jsPDF: {
-          unit: 'in',
-          format: 'letter',
-          orientation: 'portrait',
-        },
-        pagebreak: { mode: ['css', 'legacy'] }
-      })
-      .from(el)
-      .save();
+    canvases = await rasterizeSVGs(el);
+    imgOriginals = fixObjectFitImages(el);
 
+    await waitForNextFrame();
+
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      letterRendering: true,
+      backgroundColor: '#ffffff',
+      width: el.scrollWidth,
+      height: el.scrollHeight
+    });
+
+    await window.html2pdf().set({
+      margin: [PDF_EXPORT.marginInches, PDF_EXPORT.marginInches, PDF_EXPORT.marginInches, PDF_EXPORT.marginInches],
+      filename: `${cityName}_City_Flood_Risk_Fact_Sheet.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+      pagebreak: { mode: [] }
+    }).from(canvas, 'canvas').toPdf().save();
   } catch (err) {
     console.error('PDF export failed', err);
     alert(err.message);
+  } finally {
+    restoreObjectFitImages(imgOriginals);
+    restoreSVGs(el, canvases);
+    if (cleanupExport) cleanupExport();
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export PDF`;
   }
-
-  btn.disabled = false;
-  btn.textContent = 'Export PDF';
 }
 // ── PNG EXPORT ──────────────────────────────────────────────────
 async function exportPNG() {
