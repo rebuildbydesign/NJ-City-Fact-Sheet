@@ -726,7 +726,7 @@ async function exportPDF() {
 
     await window.html2pdf().set({
       margin: [PDF_EXPORT.marginInches, PDF_EXPORT.marginInches, PDF_EXPORT.marginInches, PDF_EXPORT.marginInches],
-      filename: `${cityName}_City_Flood_Risk_Fact_Sheet.pdf`,
+      filename: `NJUnderwater_${cityName}.pdf`,
       image: { type: 'jpeg', quality: 0.95 },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
       pagebreak: { mode: [] }
