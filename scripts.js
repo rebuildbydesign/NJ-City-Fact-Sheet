@@ -72,7 +72,7 @@ function num(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 
 function buildDataFromCSV(rows) {
   rows.forEach(r => {
-    const name = r['CITY'];
+    const name = String(r['CITY'] || '').trim();
     if (!name) return;
 
     CSV_DATA[name] = r;
@@ -138,8 +138,8 @@ function sviLabel(v) {
 function slugifyCityName(name) {
   return (name || '')
     .toLowerCase()
-    .replace(/CITY/g, '')
-    .replace(/new jersey/g, '')
+    .replace(/\bcity\b/g, '')
+    .replace(/\bnew jersey\b/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
@@ -302,7 +302,9 @@ function buildNJMapSVG(activeCity) {
     });
 
     if (sel.options.length > 0) {
-      renderCity(sel.options[0].value);
+      const urlCity = getCityFromURL();
+      const initialCity = findCityMatch(urlCity) || sel.options[1]?.value || sel.options[0].value;
+      renderCity(initialCity);
     }
 
   });
