@@ -10,6 +10,7 @@ let CITIES = {};   // populated from CSV
 let FEMA = {};       // populated from CSV
 let CSV_DATA = {};   // raw CSV rows keyed by city
 let NONRENEWALS = {}; // populated from non-renewals CSV
+let POPULATION_2024 = {}; // populated from 2024 population CSV
 
 
 // ── ASSET LABELS ────────────────────────────────────────────────
@@ -69,6 +70,23 @@ function parseCSVLine(line) {
 }
 
 function num(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+function normalizeMunicipalityName(name) {
+  return String(name || '')
+    .toUpperCase()
+    .replace(/\b(CITY|TWP|TOWNSHIP|TOWN|BORO|BOROUGH|VILLAGE|VLG)\b/g, '')
+    .replace(/[^A-Z0-9]+/g, ' ')
+    .trim();
+}
+
+function buildPopulationLookup(rows) {
+  POPULATION_2024 = {};
+  rows.forEach(r => {
+    const normalized = normalizeMunicipalityName(r['MUNCIPALITY']);
+    if (!normalized) return;
+    POPULATION_2024[normalized] = num(String(r['2024_POP'] || '').replace(/,/g, ''));
+  });
+}
 
 function buildDataFromCSV(rows) {
   rows.forEach(r => {
@@ -284,10 +302,12 @@ function buildNJMapSVG(activeCity) {
   const sel = document.getElementById('city-select');
 
   Promise.all([
-    loadCSV('nj-city-findings.csv')
-  ]).then(([csvRows]) => {
+    loadCSV('nj-city-findings.csv'),
+    loadCSV('data/nj_pop_2024.csv')
+  ]).then(([csvRows, popRows]) => {
 
     buildDataFromCSV(csvRows);
+    buildPopulationLookup(popRows);
 
     Object.keys(CITIES).sort().forEach(name => {
       const opt = document.createElement('option');
@@ -384,6 +404,7 @@ function renderCity(name) {
   const c = CITIES[matchedName?.trim()];
   const f = FEMA[matchedName?.trim()];
   const row = CSV_DATA[matchedName?.trim()] || {};
+  const population2024 = POPULATION_2024[normalizeMunicipalityName(matchedName)] || num(row.POPULATION);
   const countyName = String(row.COUNTY || '').trim();
   const blueAcresParcels = num(row.blueacres);
   const countyIntro = countyName
@@ -473,8 +494,8 @@ function renderCity(name) {
   </div>
 <div class="metric-cell">
   <div class="risk-card-title">Population</div>
-  <div class="metric-value">${fmt(num(CSV_DATA[matchedName].POPULATION))}</div>
-  <div class="metric-sub">Latest Estimate</div>
+  <div class="metric-value">${fmt(population2024)}</div>
+  <div class="metric-sub">2024 Estimate</div>
     </div>
  
   <div class="metric-cell">
